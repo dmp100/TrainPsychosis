@@ -1,0 +1,12 @@
+Elen "This is line 1"
+ "This is line 2 from Elen"
+ "This is line 3 from Elen"
+
+narrator "Narrator is speaking now."
+"Narrator is continuing to speak"
+
+John "John 1"
+"John 2"
+
+Elen "Elen 1"
+Elen "Elen 2"
