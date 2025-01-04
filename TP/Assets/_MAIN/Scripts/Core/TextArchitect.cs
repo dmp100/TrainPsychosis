@@ -1,6 +1,8 @@
 using System.Collections;
 using UnityEngine;
 using TMPro;
+using UnityEditor;
+using Unity.VisualScripting;
 
 // TextArchitect: TextMeshPro(TMP) 컴포넌트에 텍스트를 동적으로 출력하는 기능 (예: 타자 효과, 페이드 효과 등)을 구현하는 클래스
 public class TextArchitect 
@@ -125,6 +127,7 @@ public class TextArchitect
                 tmpro.maxVisibleCharacters = tmpro.textInfo.characterCount; // 모든 문자를 한 번에 표시
                 break;
             case BuildMethod.fade:
+                tmpro.ForceMeshUpdate(); // 더블, 트리플 클릭시 빠르게 나옴
                 break;
         }
         Stop(); // 작업 중지
@@ -173,10 +176,50 @@ public class TextArchitect
         tmpro.ForceMeshUpdate(); // TMP 메쉬 업데이트
     }
 
-    // 페이드 효과 방식 준비 (구현 필요)
+    // 페이드 효과 방식 준비 
     private void Prepare_Fade()
     {
-        
+        tmpro.text = preText;
+        if (preText != "")
+        {
+            tmpro.ForceMeshUpdate();
+            preTextLength = tmpro.textInfo.characterCount;
+        }
+        else 
+            preTextLength = 0;
+
+        tmpro.text += targetText;
+        tmpro.maxVisibleCharacters = int.MaxValue;
+        tmpro.ForceMeshUpdate();
+
+        TMP_TextInfo textInfo = tmpro.textInfo;
+
+        Color colorVisable = new Color(textColor.r, textColor.g, textColor.b,1);
+        Color colorHidden = new Color(textColor.r, textColor.g, textColor.b, 0);
+
+        Color32[] vertexColors = textInfo.meshInfo[textInfo.characterInfo[0].materialReferenceIndex].colors32;
+
+        for(int i=0; i<textInfo.characterCount; i++)
+        {
+            TMP_CharacterInfo charInfo = textInfo.characterInfo[i];
+
+            if (!charInfo.isVisible)
+                continue;
+
+            if (i< preTextLength)
+                for(int v = 0; v<4; v++) 
+                {
+                    vertexColors[charInfo.vertexIndex + v] = colorVisable;
+                }
+                else
+                {
+                for (int v = 0; v < 4; v++)
+                    vertexColors[charInfo.vertexIndex + v] = colorHidden;
+                }
+        }
+
+        tmpro.UpdateVertexData(TMP_VertexDataUpdateFlags.Colors32);
+
     }
 
     // 타자 효과 출력 방식
@@ -189,9 +232,52 @@ public class TextArchitect
         }
     }
 
-    // 페이드 효과 출력 방식 (구현 필요)
+    // 페이드 효과 출력 방식
     private IEnumerator Build_Fade()
     {
-        yield return null; // 임시 구현
+        int minRange = preTextLength;
+        int maxRange = minRange + 1;
+
+        byte alphaThreshold = 15;
+
+        TMP_TextInfo textInfo = tmpro.textInfo;
+
+        Color32[] vertexColors = textInfo.meshInfo[textInfo.characterInfo[0].materialReferenceIndex].colors32;
+        float[] alphas = new float[textInfo.characterCount];
+
+        while (true)
+        {
+            float fadeSpeed = (hurryup ? charactersPerCycle * 5 : charactersPerCycle * speed) * 4f;
+
+            for (int i = minRange; i < maxRange; i++)
+            {
+                TMP_CharacterInfo charInfo = textInfo.characterInfo[i];
+
+                if (!charInfo.isVisible)
+                    continue;
+
+                int vertexIndex = textInfo.characterInfo[i].vertexIndex;
+                alphas[i] = Mathf.MoveTowards(alphas[i], 255, fadeSpeed);
+
+                for (int v = 0; v < 4; v++)
+                    vertexColors[charInfo.vertexIndex + v].a = (byte)alphas[i];
+
+                if (alphas[i] >= 255)
+                    minRange++;
+            }
+
+            tmpro.UpdateVertexData(TMP_VertexDataUpdateFlags.Colors32);
+
+            bool lastCharacterIsInvisible = !textInfo.characterInfo[maxRange - 1].isVisible;
+            if (alphas[maxRange - 1] > alphaThreshold || lastCharacterIsInvisible)
+            {
+                if (maxRange < textInfo.characterCount)
+                    maxRange++;
+                else if (alphas[maxRange - 1] >= 255 || lastCharacterIsInvisible)
+                    break;
+            }
+
+            yield return new WaitForEndOfFrame();
+        }
     }
 }

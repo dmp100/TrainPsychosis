@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using DIALOGUE;
 
 namespace TESTING
 {
@@ -14,6 +15,9 @@ namespace TESTING
         DialogueSystem ds;
         // TextArchitect 객체: 텍스트를 출력하는 데 사용
         TextArchitect architect;
+
+
+        public TextArchitect.BuildMethod bm = TextArchitect.BuildMethod.instant;
 
         // 랜덤으로 출력될 텍스트 배열
         string[] lines = new string[5]
@@ -32,8 +36,12 @@ namespace TESTING
             ds = DialogueSystem.instance;
             // TextArchitect 객체 초기화, DialogueContainer의 dialogueText 사용
             architect = new TextArchitect(ds.dialogueContainer.dialogueText);
+
             // 텍스트 출력 방식을 타자 효과(typewriter)로 설정
-            architect.buildMethod = TextArchitect.BuildMethod.typewriter;
+            //architect.buildMethod = TextArchitect.BuildMethod.typewriter;
+
+            architect.buildMethod = TextArchitect.BuildMethod.fade;
+
             // 텍스트 출력 속도 설정
             architect.speed = 0.5f;
         }
@@ -41,6 +49,16 @@ namespace TESTING
         // Update 메서드: 매 프레임 호출
         void Update()
         {
+
+            if (bm != architect.buildMethod)
+            {
+                architect.buildMethod = bm;
+                architect.Stop();
+            }
+
+            if (Input.GetKeyUp(KeyCode.S))
+                architect.Stop();
+
             // 매우 긴 문자열 (Append 예제용)
             string LongLine = "애미씨발좆같은병신버러지새끼가이재명처럼형보수지당하고싶어서입을는순간에겐고처럼자지아가리에물려서게이화시켜버린다.";
 

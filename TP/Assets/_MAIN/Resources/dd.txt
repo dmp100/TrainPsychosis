@@ -1,0 +1,6 @@
+Test Line "이것은 정말 긴 줄의 예시입니다. 더 잘 쓸 수 있다면 정말 대박날 것 같아요. 진심으로... 이건 바이럴이 될 수 있어요. 약간의 긴장감과 노력, 그리고 약간의 행운만 있다면 이건 인터넷을 두 번 흔들 수 있을 거예요"
+이재명: "쉐쉐" listItems = { hongi, playSongs"Into Song" -> 1}
+setScreen("classname" -> 5.5)
+World "Hello, "Quote Here" (just look at you)"
+barrise" And go ended the traditional "Hello World" conversation."
+PlaySongs(3, y,0.5), listBarItems.size()
