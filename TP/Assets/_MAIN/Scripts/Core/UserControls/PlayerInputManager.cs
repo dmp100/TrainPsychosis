@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-
 namespace DIALOGUE
 {
     public class PlayerInputManager : MonoBehaviour
@@ -16,16 +15,13 @@ namespace DIALOGUE
         // Update is called once per frame
         void Update()
         {
-            if(Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return)) 
-            {
+            if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return))
                 PromptAdvance();
-            }
         }
 
         public void PromptAdvance()
         {
             DialogueSystem.instance.OnUserPrompt_Next();
         }
-
     }
 }
