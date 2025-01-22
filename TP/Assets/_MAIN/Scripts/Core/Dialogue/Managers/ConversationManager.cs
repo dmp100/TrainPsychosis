@@ -1,3 +1,4 @@
+using COMMANDS;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
@@ -27,11 +28,13 @@ namespace DIALOGUE
             userPrompt = true;
         }
 
-        public void StartConversation(List<string> conversation)
+        public Coroutine StartConversation(List<string> conversation)
         {
             StopConversation();
 
             process = dialogueSystem.StartCoroutine(RunningConversation(conversation));
+
+            return process;
         }
 
         public void StopConversation()
@@ -81,7 +84,7 @@ namespace DIALOGUE
         {
             List<DL_COMMAND_DATA.Command> commands = line.commandData.commands;
 
-            foreach(DL_COMMAND_DATA.Command command in commands)
+            foreach (DL_COMMAND_DATA.Command command in commands)
             {
                 if (command.waitForCompletion)
                     yield return CommandManager.instance.Execute(command.name, command.arguments);
@@ -94,7 +97,7 @@ namespace DIALOGUE
 
         IEnumerator BuildLineSegments(DL_DIALOGUE_DATA line)
         {
-            for(int i = 0; i < line.segments.Count; i++)
+            for (int i = 0; i < line.segments.Count; i++)
             {
                 DL_DIALOGUE_DATA.DIALOGUE_SEGMENT segment = line.segments[i];
 
@@ -106,7 +109,7 @@ namespace DIALOGUE
 
         IEnumerator WaitForDialogueSegmentSignalToBeTriggered(DL_DIALOGUE_DATA.DIALOGUE_SEGMENT segment)
         {
-            switch(segment.startSignal)
+            switch (segment.startSignal)
             {
                 case DL_DIALOGUE_DATA.DIALOGUE_SEGMENT.StartSignal.C:
                 case DL_DIALOGUE_DATA.DIALOGUE_SEGMENT.StartSignal.A:
