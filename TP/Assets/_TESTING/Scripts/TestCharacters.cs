@@ -23,42 +23,56 @@ namespace TESTING
 
         IEnumerator Test()
         {
+           
 
-            Character Elen = CharacterManager.instance.CreateCharacter("Elen");
-            Character Adam = CharacterManager.instance.CreateCharacter("Adam");
-            Character Ben = CharacterManager.instance.CreateCharacter("Benjamin");
+            Character Stella = CharacterManager.instance.CreateCharacter("Stella");
 
-            List<string> lines = new List<string>()
-        {
-            "abcddf",
-            "asfhlafjshkjaf.",
-            "fygudsh",
-            "gwes4gew {wa 1} sfafasfas"
-        };
-            yield return Elen.Say(lines);
+            yield return new WaitForSeconds(1f);
 
-            Elen.SetNameColor(Color.red);
-            Elen.SetDialogueColor(Color.green);
-            Elen.SetNameFont(tempFont);
-            Elen.SetDialogueFont(tempFont);
+            yield return Stella.Hide();
 
-            yield return Elen.Say(lines);
+            yield return new WaitForSeconds(0.5f);
 
-            Elen.ResetConfigurationData();
+            yield return Stella.Show();
 
-            yield return Elen.Say(lines);
+            yield return Stella.Say("Hi");
+            
 
-            lines = new List<string>()
-            {
-                "fsafijasioj",
-                "fsafasasffsa"
-            };
+            //    Character Elen = CharacterManager.instance.CreateCharacter("Elen");
+            //    Character Adam = CharacterManager.instance.CreateCharacter("Adam");
+            //    Character Ben = CharacterManager.instance.CreateCharacter("Benjamin");
 
-            yield return Adam.Say(lines);
+            //    List<string> lines = new List<string>()
+            //{
+            //    "abcddf",
+            //    "asfhlafjshkjaf.",
+            //    "fygudsh",
+            //    "gwes4gew {wa 1} sfafasfas"
+            //};
+            //    yield return Elen.Say(lines);
 
-            yield return Ben.Say("fassf.{a} 저는 엄싸개죠.");
+            //    Elen.SetNameColor(Color.red);
+            //    Elen.SetDialogueColor(Color.green);
+            //    Elen.SetNameFont(tempFont);
+            //    Elen.SetDialogueFont(tempFont);
 
-            Debug.Log("Finished");
+            //    yield return Elen.Say(lines);
+
+            //    Elen.ResetConfigurationData();
+
+            //    yield return Elen.Say(lines);
+
+            //    lines = new List<string>()
+            //    {
+            //        "fsafijasioj",
+            //        "fsafasasffsa"
+            //    };
+
+            //    yield return Adam.Say(lines);
+
+            //    yield return Ben.Say("fassf.{a} 저는 엄싸개죠.");
+
+            //    Debug.Log("Finished");
         }
 
         // Update is called once per frame
