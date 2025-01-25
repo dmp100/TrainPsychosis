@@ -17,12 +17,7 @@ namespace DIALOGUE
 
             //Debug.Log($"Speaker = '{speaker}'\nDialogue = '{dialogue}'\nCommands = '{commands}'");
 
-            //We have to inject tags and variables into the speaker and dialogue separately because there are initial checks that have
-            //to be performed.
-            //But commands need no checks, so we can inject the variables in them right now.
-            commands = TagManager.Inject(commands);
-
-            return new DIALOGUE_LINE(rawLine, speaker, dialogue, commands);
+            return new DIALOGUE_LINE(speaker, dialogue, commands);
         }
 
         private static (string, string, string) RipContent(string rawLine)
@@ -33,7 +28,7 @@ namespace DIALOGUE
             int dialogueEnd = -1;
             bool isEscaped = false;
 
-            for (int i = 0; i < rawLine.Length; i++)
+            for(int i = 0; i < rawLine.Length; i++)
             {
                 char current = rawLine[i];
                 if (current == '\\')
@@ -53,7 +48,7 @@ namespace DIALOGUE
             Regex commandRegex = new Regex(commandRegexPattern);
             MatchCollection matches = commandRegex.Matches(rawLine);
             int commandStart = -1;
-            foreach (Match match in matches)
+            foreach(Match match in matches)
             {
                 if (match.Index < dialogueStart || match.Index > dialogueEnd)
                 {

@@ -13,7 +13,7 @@ namespace DIALOGUE
     public class NameContainer
     {
         [SerializeField] private GameObject root;
-        [field:SerializeField] public TextMeshProUGUI nameText { get; private set; }
+        [SerializeField] private TextMeshProUGUI nameText;
 
         public void Show(string nameToShow = "")
         {
@@ -29,7 +29,6 @@ namespace DIALOGUE
         }
 
         public void SetNameColor(Color color) => nameText.color = color;
-        public void SetNameFont(TMP_FontAsset font) => nameText.font = font;
-        public void SetNameFontSize(float size) => nameText.fontSize = size;
+        public void SetnameFont(TMP_FontAsset font) => nameText.font = font;
     }
 }

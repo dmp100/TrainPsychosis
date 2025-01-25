@@ -3,51 +3,29 @@ using System.Collections.Generic;
 using System.Collections;
 using TMPro;
 using UnityEngine;
+using System.Diagnostics.CodeAnalysis;
+using Unity.IO.LowLevel.Unsafe;
 
 namespace CHARACTERS
 {
     public abstract class Character
     {
-        public const bool ENABLE_ON_START = false;
-        private const float UNHIGHLIGHTED_DARKEN_STRENGTH = 0.65f;
-        public const bool DEFAULT_ORIENTATION_IS_FACING_LEFT = true;
-        public const string ANIMATION_REFRESH_TRIGGER = "Refresh";
-
         public string name = "";
         public string displayName = "";
-        public string castingName = "";
         public RectTransform root = null;
         public CharacterConfigData config;
         public Animator animator;
-        public Color color { get; protected set; } = Color.white;
-        protected Color displayColor => highlighted ? highlightedColor : unhighlightedColor;
-        protected Color highlightedColor => color;
-        protected Color unhighlightedColor => new Color(color.r * UNHIGHLIGHTED_DARKEN_STRENGTH, color.g * UNHIGHLIGHTED_DARKEN_STRENGTH, color.b * UNHIGHLIGHTED_DARKEN_STRENGTH, color.a);
-        public bool highlighted { get; protected set; } = true;
-        protected bool facingLeft = DEFAULT_ORIENTATION_IS_FACING_LEFT;
-        public int priority { get; protected set; }
-        public Vector2 targetPosition { get; private set; }
 
-        protected CharacterManager characterManager => CharacterManager.instance;
+        protected CharacterManager manager => CharacterManager.instance;
         public DialogueSystem dialogueSystem => DialogueSystem.instance;
 
         //Coroutines
         protected Coroutine co_revealing, co_hiding;
         protected Coroutine co_moving;
-        protected Coroutine co_changingColor;
-        protected Coroutine co_highlighting;
-        protected Coroutine co_flipping;
         public bool isRevealing => co_revealing != null;
         public bool isHiding => co_hiding != null;
         public bool isMoving => co_moving != null;
-        public bool isChangingColor => co_changingColor != null;
-        public bool isHighlighting => (highlighted && co_highlighting != null);
-        public bool isUnHighlighting => (!highlighted && co_highlighting != null);
-        public virtual bool isVisible { get; set; }
-        public bool isFacingLeft => facingLeft;
-        public bool isFacingRight => !facingLeft;
-        public bool isFlipping => co_flipping != null;
-
+        public virtual bool isVisible => false;
 
         public Character(string name, CharacterConfigData config, GameObject prefab)
         {
@@ -57,10 +35,8 @@ namespace CHARACTERS
 
             if (prefab != null)
             {
-                Transform parentPanel = (config.characterType == CharacterType.Live2D ? characterManager.characterPanelLive2D : characterManager.characterPanel);
-                
-                GameObject  ob = Object.Instantiate(prefab, parentPanel);
-                ob.name = characterManager.FormatCharacterPath(characterManager.characterPrefabNameFormat, name);
+                GameObject ob = Object.Instantiate(prefab, manager.characterPanel);
+                ob.name = manager.FormatCharacterPath(manager.characterPrefabNameFormat, name);
                 ob.SetActive(true);
                 root = ob.GetComponent<RectTransform>();
                 animator = root.GetComponentInChildren<Animator>();
@@ -79,36 +55,36 @@ namespace CHARACTERS
         public void SetDialogueFont(TMP_FontAsset font) => config.dialogueFont = font;
         public void SetNameColor(Color color) => config.nameColor = color;
         public void SetDialogueColor(Color color) => config.dialogueColor = color;
-        public void ResetConfigurationData() => config = CharacterManager.instance.GetCharacterConfig(name, getOriginal: true);
+        public void ResetConfigurationData() => config = CharacterManager.instance.GetCharacterConfig(name);
         public void UpdateTextCustomizationsOnScreen() => dialogueSystem.ApplySpeakerDataToDialogueContainer(config);
 
-        public virtual Coroutine Show(float speedMultiplier = 1f)
+        public virtual Coroutine Show()
         {
             if (isRevealing)
-                characterManager.StopCoroutine(co_revealing);
+                return co_revealing;
 
             if (isHiding)
-                characterManager.StopCoroutine(co_hiding);
+                manager.StopCoroutine(co_hiding);
 
-            co_revealing = characterManager.StartCoroutine(ShowingOrHiding(true, speedMultiplier));
+            co_revealing = manager.StartCoroutine(ShowingOrHiding(true));
 
             return co_revealing;
         }
 
-        public virtual Coroutine Hide(float speedMultiplier = 1f)
+        public virtual Coroutine Hide()
         {
             if (isHiding)
-                characterManager.StopCoroutine(co_hiding);
+                return co_hiding;
 
             if (isRevealing)
-                characterManager.StopCoroutine(co_revealing);
+                manager.StopCoroutine(co_revealing);
 
-            co_hiding = characterManager.StartCoroutine(ShowingOrHiding(false, speedMultiplier));
+            co_hiding = manager.StartCoroutine(ShowingOrHiding(false));
 
             return co_hiding;
         }
 
-        public virtual IEnumerator ShowingOrHiding(bool show, float speedMultiplier = 1f)
+        public virtual IEnumerator ShowingOrHiding(bool show)
         {
             Debug.Log("Show/Hide cannot be called from a base character type.");
             yield return null;
@@ -123,8 +99,6 @@ namespace CHARACTERS
 
             root.anchorMin = minAnchorTarget;
             root.anchorMax = maxAnchorTarget;
-
-            targetPosition = position;
         }
 
         public virtual Coroutine MoveToPosition(Vector2 positon, float speed = 2f, bool smooth = false)
@@ -133,11 +107,9 @@ namespace CHARACTERS
                 return null;
 
             if (isMoving)
-                characterManager.StopCoroutine(co_moving);
+                manager.StopCoroutine(co_moving);
 
-            co_moving = characterManager.StartCoroutine(MovingToPosition(positon, speed, smooth));
-
-            targetPosition = positon;
+            co_moving = manager.StartCoroutine(MovingToPosition(positon, speed, smooth));
 
             return co_moving;
         }
@@ -165,7 +137,7 @@ namespace CHARACTERS
                 yield return null;
             }
 
-            //Debug.Log("Done moving");
+            Debug.Log("Done moving");
             co_moving = null;
         }
 
@@ -180,122 +152,6 @@ namespace CHARACTERS
             Vector2 maxAnchorTarget = minAnchorTarget + padding;
 
             return (minAnchorTarget, maxAnchorTarget);
-        }
-
-        public virtual void SetColor(Color color)
-        {
-            this.color = color;
-        }
-
-        public Coroutine TransitionColor(Color color, float speed = 1f)
-        {
-            this.color = color;
-
-            if (isChangingColor)
-                characterManager.StopCoroutine(co_changingColor);
-
-            co_changingColor = characterManager.StartCoroutine(ChangingColor(speed));
-
-            return co_changingColor;
-        }
-
-        public virtual IEnumerator ChangingColor(float speed)
-        {
-            Debug.Log("Color changing is not applicable on this character type!");
-            yield return null;
-        }
-
-        public Coroutine Highlight(float speed = 1f, bool immediate = false)
-        {
-            if (isHighlighting || isUnHighlighting)
-                characterManager.StopCoroutine(co_highlighting);
-
-            highlighted = true;
-            co_highlighting = characterManager.StartCoroutine(Highlighting(speed, immediate));
-
-            return co_highlighting;
-        }
-
-        public Coroutine UnHighlight(float speed = 1f, bool immediate = false)
-        {
-            if (isHighlighting || isUnHighlighting)
-                characterManager.StopCoroutine(co_highlighting);
-
-            highlighted = false;
-            co_highlighting = characterManager.StartCoroutine(Highlighting(speed, immediate));
-
-            return co_highlighting;
-        }
-
-        public virtual IEnumerator Highlighting(float speedMultiplier, bool immediate = false)
-        {
-            Debug.Log("Highlighting is not available on this character type!");
-            yield return null;
-        }
-
-        public Coroutine Flip(float speed = 1, bool immediate = false)
-        {
-            if (isFacingLeft)
-                return FaceRight(speed, immediate);
-            else
-                return FaceLeft(speed, immediate);
-        }
-
-        public Coroutine FaceLeft(float speed = 1, bool immediate = false)
-        {
-            if (isFlipping)
-                characterManager.StopCoroutine(co_flipping);
-
-            facingLeft = true;
-            co_flipping = characterManager.StartCoroutine(FaceDirection(facingLeft, speed, immediate));
-
-            return co_flipping;
-        }
-
-        public Coroutine FaceRight(float speed = 1, bool immediate = false)
-        {
-            if (isFlipping)
-                characterManager.StopCoroutine(co_flipping);
-
-            facingLeft = false;
-            co_flipping = characterManager.StartCoroutine(FaceDirection(facingLeft, speed, immediate));
-
-            return co_flipping;
-        }
-
-        public virtual IEnumerator FaceDirection(bool faceLeft, float speedMultiplier, bool immediate)
-        {
-            Debug.Log("Cannot flip a character of this type!");
-            yield return null;
-        }
-
-        public void SetPriority(int priority, bool autoSortCharactersOnUI = true)
-        {
-            this.priority = priority;
-
-            if (autoSortCharactersOnUI)
-                characterManager.SortCharacters();
-        }
-
-        public void Animate(string animation)
-        {
-            animator.SetTrigger(animation);
-        }
-
-        public void Animate(string animation, bool state)
-        {
-            animator.SetBool(animation, state);
-            animator.SetTrigger(ANIMATION_REFRESH_TRIGGER);
-        }
-
-        public virtual void OnSort(int sortingIndex)
-        {
-            return;
-        }
-
-        public virtual void OnReceiveCastingExpression(int layer, string expression)
-        {
-            return;
         }
 
         public enum CharacterType

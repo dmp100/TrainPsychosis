@@ -1,67 +1,27 @@
-using History;
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace DIALOGUE
 {
     public class PlayerInputManager : MonoBehaviour
     {
-        private PlayerInput input;
-        private List<(InputAction action, Action<InputAction.CallbackContext> command)> actions = new List<(InputAction action, Action<InputAction.CallbackContext> command)> ();
-
-        private void Awake()
+        // Start is called before the first frame update
+        void Start()
         {
-            input = GetComponent<PlayerInput> ();
-            
-            InitializeActions();
+
         }
 
-        private void InitializeActions()
+        // Update is called once per frame
+        void Update()
         {
-            actions.Add((input.actions["Next"], OnNext));
-            actions.Add((input.actions["HistoryBack"], OnHistoryBack));
-            actions.Add((input.actions["HistoryForward"], OnHistoryForward));
-            actions.Add((input.actions["HistoryLogs"], OnHistoryToggleLog));
+            if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return))
+                PromptAdvance();
         }
 
-        private void OnEnable()
-        {
-            foreach (var inputAction in actions)
-                inputAction.action.performed += inputAction.command;
-        }
-
-        private void OnDisable()
-        {
-            foreach (var inputAction in actions)
-                inputAction.action.performed -= inputAction.command;
-        }
-
-        public void OnNext(InputAction.CallbackContext c)
+        public void PromptAdvance()
         {
             DialogueSystem.instance.OnUserPrompt_Next();
-        }
-
-        public void OnHistoryBack(InputAction.CallbackContext c)
-        {
-            HistoryManager.instance.GoBack();
-        }
-
-        public void OnHistoryForward(InputAction.CallbackContext c)
-        {
-            HistoryManager.instance.GoForward();
-        }
-
-        public void OnHistoryToggleLog(InputAction.CallbackContext c)
-        {
-            var logs = HistoryManager.instance.logManager;
-
-            if (!logs.isOpen)
-                logs.Open();
-            else
-                logs.Close();
         }
     }
 }

@@ -1,4 +1,3 @@
-using AYellowpaper.SerializedCollections;
 using DIALOGUE;
 using System.Collections;
 using System.Collections.Generic;
@@ -20,12 +19,6 @@ namespace CHARACTERS
         public TMP_FontAsset nameFont;
         public TMP_FontAsset dialogueFont;
 
-        public float nameFontScale = 1f;
-        public float dialogueFontScale = 1f;
-
-        [SerializedDictionary("Path / ID", "Sprite")]
-        public SerializedDictionary<string, Sprite> sprites = new SerializedDictionary<string, Sprite>();
-
         public CharacterConfigData Copy()
         {
             CharacterConfigData result = new CharacterConfigData();
@@ -38,11 +31,6 @@ namespace CHARACTERS
 
             result.nameColor = new Color(nameColor.r, nameColor.g, nameColor.b, nameColor.a);
             result.dialogueColor = new Color(dialogueColor.r, dialogueColor.g, dialogueColor.b, dialogueColor.a);
-
-            result.dialogueFontScale = dialogueFontScale;
-            result.nameFontScale = nameFontScale;
-
-            //result.sprites = sprites;
 
             return result;
         }
@@ -63,9 +51,6 @@ namespace CHARACTERS
                 result.dialogueFont = defaultFont;
                 result.nameColor = new Color(defaultColor.r, defaultColor.g, defaultColor.b, defaultColor.a);
                 result.dialogueColor = new Color(defaultColor.r, defaultColor.g, defaultColor.b, defaultColor.a);
-
-                result.dialogueFontScale = 1f;
-                result.nameFontScale = 1f;
 
                 return result;
             }

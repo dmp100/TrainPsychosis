@@ -1,0 +1,270 @@
+---대화 시스템 구문 정리---
+
+1. 전체 구문 템플릿
+{n{as cn}}{ at x{:y}}{ [1:{ + 1:e}]} "d"} {c(a){, c(a)}}
+
+- n: 대화 번호/순서
+- cn: 캐릭터 이름 지정
+- x:y: 위치 좌표
+- d: 실제 대사 내용
+- c(a): 명령어와 파라미터
+
+2. 실제 예시 분석
+Elen "Let's listen to some music!" PlaySong("Ethereal Presence" -v 1 -p 0.3)
+5                                  33                          34
+
+Navigator "Captain, we're approaching the planet."
+5         33
+
+Captain "What kind of readings?" faceLeft(Captain), move(Captain 0.7)
+5                               33                 34
+
+3. 한국어 예시
+엘렌 "음악을 들어볼까요!" PlaySong("고요한 존재" -v 1 -p 0.3)
+5                         33                    34
+
+내비게이터 "함장님, 행성에 접근하고 있습니다."
+5           33
+
+함장 "어떤 신호지?" faceLeft(함장), move(함장 0.7)
+5                   33              34
+
+4. 자주 사용되는 명령어 형식
+PlaySong("[곡이름]" -v [볼륨0-1] -p [재생속도0-1])
+setScene([장면이름])
+move([캐릭터] [이동거리])
+faceLeft([캐릭터])
+faceRight([캐릭터])
+fadeIn([시간])
+fadeOut([시간])
+wait([시간])
+shake([강도])
+
+5. 특수 문자 처리
+- 대사 안의 따옴표: \" 사용
+ 예시: 캐릭터 "그가 \"안녕\"이라고 말했어요"
+- 여러 명령어는 쉼표(,)로 구분
+ 예시: fadeIn(1), wait(0.5), PlaySong("곡이름")
+- 파라미터는 공백으로 구분
+ 예시: move(캐릭터 0.7)
+
+ ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
+
+ Chapter1/
+    main.txt         # 메인 스토리라인
+    events/
+        event1.txt   # 특별 이벤트 1
+        event2.txt   # 특별 이벤트 2
+    endings/
+        good.txt     # 굿엔딩
+        bad.txt      # 배드엔딩
+        true.txt     # 트루엔딩
+
+
+ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
+
+
+using UnityEngine;
+using System.Collections.Generic;
+
+// 1. 플래그 시스템 - 게임의 상태와 변수들을 관리
+public class FlagSystem
+{
+   // 불리언 플래그를 저장하는 딕셔너리 (예: 아이템 획득 여부, 이벤트 발생 여부)
+   private Dictionary<string, bool> flags = new Dictionary<string, bool>();
+   // 수치형 변수를 저장하는 딕셔너리 (예: 호감도, 스탯)
+   private Dictionary<string, float> variables = new Dictionary<string, float>();
+   
+   // 플래그 설정/획득 메서드
+   public void SetFlag(string key, bool value) => flags[key] = value;
+   public bool GetFlag(string key) => flags.GetValueOrDefault(key, false);
+   
+   // 변수 설정/획득 메서드
+   public void SetVariable(string key, float value) => variables[key] = value;
+   public float GetVariable(string key) => variables.GetValueOrDefault(key, 0f);
+}
+
+// 2. 노드 시스템 - 복잡한 대화 분기와 선택지를 관리
+// 대화 노드 클래스 - 하나의 대화 상황을 표현
+public class DialogueNode
+{
+   public string nodeID;        // 노드 식별자
+   public string text;          // 대화 내용
+   public List<Choice> choices; // 선택지 목록
+   public Dictionary<string, object> conditions;  // 노드 실행 조건
+   public Dictionary<string, object> effects;     // 노드 실행 효과
+}
+
+// 선택지 클래스 - 플레이어가 선택할 수 있는 옵션
+public class Choice
+{
+   public string text;          // 선택지 텍스트
+   public string nextNode;      // 선택 후 이동할 노드
+   public Dictionary<string, object> conditions;  // 선택지 표시 조건
+   public Dictionary<string, object> effects;     // 선택 시 발생할 효과
+}
+
+// 노드 관리 시스템
+public class NodeSystem
+{
+   private Dictionary<string, DialogueNode> nodes;  // 모든 대화 노드 저장
+   private FlagSystem flagSystem;                   // 플래그 시스템 참조
+
+   // 특정 노드부터 대화 시작
+   public void StartNode(string nodeName)
+   {
+       var node = nodes[nodeName];
+       // 노드 실행 조건 체크
+       if(node.conditions == null || CheckConditions(node.conditions))
+       {
+           ProcessNode(node);
+       }
+   }
+
+   // 노드 처리 로직
+   private void ProcessNode(DialogueNode node)
+   {
+       ShowDialogue(node.text);  // 대화 표시
+       // 선택지가 있는 경우 표시
+       if(node.choices != null && node.choices.Count > 0)
+       {
+           ShowChoices(node.choices);
+       }
+   }
+}
+
+// 3. 스크립트 시스템 - 일반적인 대화 진행을 관리
+public class ScriptSystem 
+{
+   private FlagSystem flagSystem;    // 플래그 시스템 참조
+   private NodeSystem nodeSystem;    // 노드 시스템 참조
+
+   // 한 줄의 스크립트 처리
+   public void ProcessLine(string line)
+   {
+       // 노드 분기 명령어 처리
+       if(line.StartsWith("[branch"))
+       {
+           string nodeName = ExtractNodeName(line);
+           nodeSystem.StartNode(nodeName);
+       }
+       // 조건문 처리
+       else if(line.StartsWith("[if"))
+       {
+           ProcessCondition(line);
+       }
+       // 일반 대화 처리
+       else
+       {
+           ProcessDialogue(line);
+       }
+   }
+}
+
+// 4. 메인 관리자 - 모든 시스템을 통합 관리
+public class DialogueManager : MonoBehaviour
+{
+   private NodeSystem nodeSystem;
+   private FlagSystem flagSystem;
+   private ScriptSystem scriptSystem;
+   
+   // 현재 진행 모드 (스크립트 또는 노드)
+   private enum Mode { Script, Node }
+   private Mode currentMode = Mode.Script;
+
+   // 시스템 초기화
+   void Start()
+   {
+       flagSystem = new FlagSystem();
+       nodeSystem = new NodeSystem();
+       scriptSystem = new ScriptSystem();
+   }
+
+   // 스토리 진행 시작
+   public void ProcessStory(string storyFile)
+   {
+       scriptSystem.StartProcessing(storyFile);
+   }
+}
+
+/*
+스크립트 파일 예시 (story.txt):
+// 일반 대화
+John "안녕하세요!"
+
+// 조건부 분기
+[if hasItem("열쇠")]
+   John "문을 열어볼까요?"
+   [branch OpenDoorScene]  // 복잡한 상황은 노드로 처리
+[else]
+   John "문이 잠겨있네요."
+[endif]
+
+// 선택지 분기
+[branch MakeChoice]
+
+노드 정의 예시 (JSON):
+{
+   "MakeChoice": {
+       "text": "어떻게 하시겠습니까?",
+       "choices": [
+           {
+               "text": "돕는다",
+               "conditions": {"affection": 50},  // 호감도 50 이상일 때만 선택 가능
+               "effects": {"helpedMary": true}   // 선택 시 플래그 설정
+           },
+           {
+               "text": "거절한다",
+               "effects": {"helpedMary": false}
+           }
+       ]
+   }
+}
+
+실제 사용 예시:
+// 스토리 시작
+dialogueManager.ProcessStory("start.txt");
+
+// 게임 상태 설정
+flagSystem.SetFlag("hasKey", true);      // 열쇠 보유 상태
+flagSystem.SetVariable("affection", 50);  // 호감도 설정
+
+시스템의 장점:
+1. 단순한 대화는 스크립트로 쉽게 작성
+2. 복잡한 분기는 노드로 처리
+3. 게임 상태는 플래그로 관리
+4. 시스템 간 자유로운 전환 가능
+*/
+
+------
+
+Elen "This is line 1"
+ "This is line 2 from Elen"
+ "This is line 3 from Elen"
+
+narrator "Narrator is speaking now."
+"Narrator is continuing to speak"
+
+John "John 1"
+"John 2"
+
+Elen "Elen 1"
+Elen "Elen 2"
+
+----
+
+
+speaker "dialogue here"
+speaker "dailogue Line 1{}Line 2{}Line 3"
+
+{c} = clear
+{a} = append
+{wc n} = wait clear
+{wa n} = wait append
+
+
+
+-----
+speaker "대사 출력" Command(agrs), Command(args)
+
+playSong(SongName -v 1 -p -1)
