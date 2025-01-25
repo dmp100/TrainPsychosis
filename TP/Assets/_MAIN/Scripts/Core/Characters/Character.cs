@@ -55,16 +55,16 @@ namespace CHARACTERS
             displayName = name;
             this.config = config;
 
-            //if (prefab != null)
-            //{
-            //    Transform parentPanel = (config.characterType == CharacterType.Live2D ? characterManager.characterPanelLive2D : characterManager.characterPanel);
+            if (prefab != null)
+            {
+                Transform parentPanel = (config.characterType == CharacterType.Live2D ? characterManager.characterPanelLive2D : characterManager.characterPanel);
                 
-            //    GameObject  ob = Object.Instantiate(prefab, parentPanel);
-            //    ob.name = characterManager.FormatCharacterPath(characterManager.characterPrefabNameFormat, name);
-            //    ob.SetActive(true);
-            //    root = ob.GetComponent<RectTransform>();
-            //    animator = root.GetComponentInChildren<Animator>();
-            //}
+                GameObject  ob = Object.Instantiate(prefab, parentPanel);
+                ob.name = characterManager.FormatCharacterPath(characterManager.characterPrefabNameFormat, name);
+                ob.SetActive(true);
+                root = ob.GetComponent<RectTransform>();
+                animator = root.GetComponentInChildren<Animator>();
+            }
         }
 
         public Coroutine Say(string dialogue) => Say(new List<string> { dialogue });
