@@ -1,360 +1,283 @@
-﻿using System.Collections;
+using System.Collections;
 using UnityEngine;
 using TMPro;
+using UnityEditor;
+using Unity.VisualScripting;
 
-public class TextArchitect
+// TextArchitect: TextMeshPro(TMP) 컴포넌트에 텍스트를 동적으로 출력하는 기능 (예: 타자 효과, 페이드 효과 등)을 구현하는 클래스
+public class TextArchitect 
 {
+    // UI에 사용하는 TextMeshProUGUI 컴포넌트 참조
     private TextMeshProUGUI tmpro_ui;
+    // 월드 공간에서 사용하는 TextMeshPro 컴포넌트 참조
     private TextMeshPro tmpro_world;
-    /// <summary>
-    /// The assigned text component for this architect.
-    /// </summary>
+    // 현재 활성화된 TextMeshPro 객체 반환 (UI 또는 월드)
     public TMP_Text tmpro => tmpro_ui != null ? tmpro_ui : tmpro_world;
 
-    /// <summary>
-    /// The text built by this architect.
-    /// </summary>
-    public string currentText { get { return tmpro.text; } }
-    /// <summary>
-    /// The current text that this architect is trying to build. This is excluding any pretext that might be assigned for appending text.
-    /// </summary>
+    // TMP 컴포넌트에 현재 표시되고 있는 텍스트
+    public string currentText => tmpro.text;
+    // 효과를 통해 출력될 최종 목표 텍스트
     public string targetText { get; private set; } = "";
-    /// <summary>
-    /// The text that should exist prior to an appending build.
-    /// </summary>
+    // 기존에 TMP에 있던 텍스트 (새 텍스트 추가 전의 상태)
     public string preText { get; private set; } = "";
+    // 기존 텍스트(preText)의 길이
     private int preTextLength = 0;
-    /// <summary>
-    /// The full text that this architect is trying to display, including the pre text that may have existed before appending the new target text..
-    /// </summary>
+
+    // 기존 텍스트와 목표 텍스트를 합친 전체 텍스트
     public string fullTargetText => preText + targetText;
 
-    /// <summary>
-    /// Different methods that are available to this architect to render text with.
-    /// </summary>
-    public enum BuildMethod { instant, typeWriter, fade }
-    /// <summary>
-    /// How is the text build for this architect? How are the characters revealed?
-    /// </summary>
-    public BuildMethod buildMethod = BuildMethod.typeWriter;
+    // 텍스트 출력 방식(즉시 출력, 타자 효과, 페이드 효과)을 정의하는 열거형
+    public enum BuildMethod { instant, typewriter, fade }
+    // 현재 선택된 텍스트 출력 방식
+    public BuildMethod buildMethod = BuildMethod.typewriter;
 
-    /// <summary>
-    /// The color that is rendering on this text architect's tmpro component.
-    /// </summary>
+    // TMP 텍스트의 색상 설정 및 반환
     public Color textColor { get { return tmpro.color; } set { tmpro.color = value; } }
+    
+    // 텍스트 출력 속도 반환 및 설정 (기본 속도에 배속 곱)
+    public float speed { get { return baseSpeed * speedMulitplier; } set { speedMulitplier = value; } }
+    private const float baseSpeed = 1; // 기본 속도
+    private float speedMulitplier = 1; // 배속 곱
 
-    /// <summary>
-    /// How fast text building is determined by the speed
-    /// </summary>
-    public float speed { get { return baseSpeed * speedMultiplier; } set { speedMultiplier = value; } }
-    private float baseSpeed = 1;
-    /// <summary>
-    /// In addition to the base speed of the architect, the speed multiplier will affect it as well.
-    /// </summary>
-    private float speedMultiplier = 1;
+    // 속도에 따라 한 번에 출력되는 문자 수 결정
+    public int charactersPerCycle { get { return speed <= 2f ? characterMultiplier : speed <= 2.5f ? characterMultiplier * 2 : characterMultiplier * 3; } }
+    private int characterMultiplier = 1; // 기본 문자 수
 
-    /// <summary>
-    /// How many characters will be built per frame. When used with the fade technique, this instead just multiplies the speed.
-    /// </summary>
-    public int charactersPerCycle { get { return speed <= 2f ? characterMultiplier : speed <= 2.5f ? characterMultiplier * 2 : characterMultiplier * 3; } set { characterMultiplier = value; } }
-    /// <summary>
-    /// Multiply the charactersPerFrame By This.
-    /// </summary>
-    private int characterMultiplier = 1;
+    // 텍스트 출력이 빠르게 진행되도록 설정 (true일 경우 속도 증가)
+    public bool hurryup = false;
 
-    /// <summary>
-    /// if the architect is set to rush, it will display text much faster than normal.
-    /// </summary>
-    public bool hurryUp = false;
-
-    /// <summary>
-    /// Create a text architect using this ui text object
-    /// </summary>
+    // UI용 TextMeshProUGUI를 사용하는 생성자
     public TextArchitect(TextMeshProUGUI tmpro_ui)
     {
         this.tmpro_ui = tmpro_ui;
     }
-    /// <summary>
-    /// Create a text architect using this text object
-    /// </summary>
+
+    // 월드 공간용 TextMeshPro를 사용하는 생성자
     public TextArchitect(TextMeshPro tmpro_world)
     {
         this.tmpro_world = tmpro_world;
     }
 
-    /// <summary>
-    /// Build and display a string using this text.
-    /// </summary>
-    /// <param name="text"></param>
+    // 텍스트 출력 작업 시작
     public Coroutine Build(string text)
     {
-        preText = "";
-        targetText = text;
+        preText = ""; // 기존 텍스트 초기화
+        targetText = text; // 목표 텍스트 설정
 
-        Stop();
+        Stop(); // 기존 진행 중이던 작업 중지
 
-        buildProcess = tmpro.StartCoroutine(Building());
+        buildProcess = tmpro.StartCoroutine(Building()); // 새로운 출력 작업 시작
         return buildProcess;
     }
 
-    /// <summary>
-    /// Append and build a string to what is already being displayed on this text
-    /// </summary>
-    /// <param name="text"></param>
+    // 기존 텍스트에 새로운 텍스트를 추가하여 출력 작업 시작
     public Coroutine Append(string text)
     {
-        preText = tmpro.text;
-        targetText = text;
+        preText = tmpro.text; // 기존 텍스트 저장
+        targetText = text; // 추가될 목표 텍스트 설정
 
-        Stop();
+        Stop(); // 기존 진행 중이던 작업 중지
 
-        buildProcess = tmpro.StartCoroutine(Building());
+        buildProcess = tmpro.StartCoroutine(Building()); // 새로운 출력 작업 시작
         return buildProcess;
     }
 
-    private Coroutine buildProcess = null;
-    /// <summary>
-    /// Is this architect building its text at the moment?
-    /// </summary>
-    public bool isBuilding => buildProcess != null;
+    private Coroutine buildProcess = null; // 현재 진행 중인 출력 작업
+    public bool isBuilding => buildProcess != null; // 출력 작업 진행 여부 반환
 
-    /// <summary>
-    /// Stop building the text. This will not finish the text, but stop it where it is immediately.
-    /// </summary>
+    // 출력 작업 중지
     public void Stop()
     {
         if (!isBuilding)
-            return;
+            return; // 진행 중인 작업이 없으면 아무 작업도 하지 않음
 
-        tmpro.StopCoroutine(buildProcess);
-        buildProcess = null;
+        tmpro.StopCoroutine(buildProcess); // 진행 중이던 Coroutine 중지
+        buildProcess = null; // 현재 작업 초기화
     }
 
-    /// <summary>
-    /// This is what happens when the text has finished completing.
-    /// </summary>
+    // 텍스트를 출력하는 Coroutine (방식에 따라 다르게 동작)
+    IEnumerator Building()
+    {
+        Prepare(); // 출력 방식을 위한 초기 준비
+        
+        switch (buildMethod)
+        {
+            case BuildMethod.typewriter:
+                yield return Build_Typerwriter(); // 타자 효과 방식 출력
+                break;
+            case BuildMethod.fade:
+                yield return Build_Fade(); // 페이드 효과 방식 출력
+                break;
+        }
+    }
+
+    // 출력 작업 완료 시 호출
     private void OnComplete()
     {
-        buildProcess = null;
-        hurryUp = false;
+        buildProcess = null; // 진행 중인 작업 초기화
+        hurryup = false; // 빠른 진행 설정 해제
     }
 
-    /// <summary>
-    /// Stop any active build process immediately and complete the text.
-    /// </summary>
+    // 강제로 텍스트 출력 완료
     public void ForceComplete()
     {
         switch (buildMethod)
         {
-            case BuildMethod.typeWriter:
-                tmpro.maxVisibleCharacters = tmpro.textInfo.characterCount;
+            case BuildMethod.typewriter:
+                tmpro.maxVisibleCharacters = tmpro.textInfo.characterCount; // 모든 문자를 한 번에 표시
                 break;
             case BuildMethod.fade:
-                textColor = new Color(textColor.r, textColor.g, textColor.b, 1);
+                tmpro.ForceMeshUpdate(); // 더블, 트리플 클릭시 빠르게 나옴
                 break;
         }
-
-        //Stop the build process if it is running.
-        Stop();
-        OnComplete();
+        Stop(); // 작업 중지
+        OnComplete(); // 완료 처리
     }
 
-    /// <summary>
-    /// Prepare the assigned text component for the build process.
-    /// </summary>
+    // 텍스트 출력 방식을 위한 준비 단계
     private void Prepare()
     {
         switch (buildMethod)
         {
             case BuildMethod.instant:
-                Prepare_Instant();
+                Prepare_Instant(); // 즉시 출력 준비
                 break;
-            case BuildMethod.typeWriter:
-                Prepare_Typewriter();
+            case BuildMethod.typewriter:
+                Prepare_Typewriter(); // 타자 효과 준비
                 break;
             case BuildMethod.fade:
-                Prepare_Fade();
+                Prepare_Fade(); // 페이드 효과 준비
                 break;
         }
     }
 
+    // 즉시 출력 방식 준비
     private void Prepare_Instant()
     {
-        textColor = textColor;//new Color(textColor.r, textColor.g, textColor.b, 1);
-        tmpro.text = fullTargetText;
-        tmpro.ForceMeshUpdate();
-        tmpro.maxVisibleCharacters = tmpro.textInfo.characterCount;
+        tmpro.color = tmpro.color; // 기존 색상 유지
+        tmpro.text = fullTargetText; // 전체 텍스트를 즉시 설정
+        tmpro.ForceMeshUpdate(); // TMP 메쉬 업데이트
+        tmpro.maxVisibleCharacters = tmpro.textInfo.characterCount; // 모든 문자 표시
     }
 
+    // 타자 효과 방식 준비
     private void Prepare_Typewriter()
     {
-        //Recover color in case this architect used fading earlier.
-        textColor = textColor;// new Color(textColor.r, textColor.g, textColor.b, 1);
-        tmpro.maxVisibleCharacters = 0;
-        tmpro.text = preText;
+        tmpro.color = tmpro.color; // 기존 색상 유지
+        tmpro.maxVisibleCharacters = 0; // 처음에는 아무 문자도 표시하지 않음
+        tmpro.text = preText; // 기존 텍스트 설정
 
         if (preText != "")
         {
-            tmpro.ForceMeshUpdate();
-            tmpro.maxVisibleCharacters = tmpro.textInfo.characterCount;
+            tmpro.ForceMeshUpdate(); // TMP 메쉬 업데이트
+            tmpro.maxVisibleCharacters = tmpro.textInfo.characterCount; // 기존 텍스트만 표시
         }
-
-        tmpro.text += targetText;
-        tmpro.ForceMeshUpdate();
+        tmpro.text += targetText; // 목표 텍스트 추가
+        tmpro.ForceMeshUpdate(); // TMP 메쉬 업데이트
     }
 
+    // 페이드 효과 방식 준비 
     private void Prepare_Fade()
     {
-        //Get the pretext length if there is any so we know what should start visible.
         tmpro.text = preText;
         if (preText != "")
         {
             tmpro.ForceMeshUpdate();
             preTextLength = tmpro.textInfo.characterCount;
         }
-        else
+        else 
             preTextLength = 0;
 
-        //Now add the target text to complete the string.
         tmpro.text += targetText;
-
         tmpro.maxVisibleCharacters = int.MaxValue;
         tmpro.ForceMeshUpdate();
+
         TMP_TextInfo textInfo = tmpro.textInfo;
 
-        Color colorVisable = new Color(textColor.r, textColor.g, textColor.b, 1);
+        Color colorVisable = new Color(textColor.r, textColor.g, textColor.b,1);
         Color colorHidden = new Color(textColor.r, textColor.g, textColor.b, 0);
 
         Color32[] vertexColors = textInfo.meshInfo[textInfo.characterInfo[0].materialReferenceIndex].colors32;
 
-        // Loop through all characters and set the right starting color.
-        for (int i = 0; i < textInfo.characterCount; i++)
+        for(int i=0; i<textInfo.characterCount; i++)
         {
-            // Get the vertex colors of the current character
             TMP_CharacterInfo charInfo = textInfo.characterInfo[i];
 
-            //Invisible characters have their index default to the first character in the string.
-            //In order to avoid overwriting the first character with a secondary color, skip any invisible characters
             if (!charInfo.isVisible)
                 continue;
 
-            //Debug.Log($"Examine '{charInfo.character}' [{i}/{preTextLength}] = {(i<preTextLength ? "red" : "black")}");
-
-            // Set the color of the current character
-            if (i < preTextLength)
-            {
-                //Debug.Log($"set pre '{charInfo.character}' to red");
-                for (int v = 0; v < 4; v++)
+            if (i< preTextLength)
+                for(int v = 0; v<4; v++) 
+                {
                     vertexColors[charInfo.vertexIndex + v] = colorVisable;
-            }
-            else
-            {
-                //Debug.Log($"set new '{charInfo.character}' to black");  
+                }
+                else
+                {
                 for (int v = 0; v < 4; v++)
                     vertexColors[charInfo.vertexIndex + v] = colorHidden;
-            }
+                }
         }
 
-        // Update the text to reflect the new colors
         tmpro.UpdateVertexData(TMP_VertexDataUpdateFlags.Colors32);
+
     }
 
-    IEnumerator Build_Typewriter()
+    // 타자 효과 출력 방식
+    private IEnumerator Build_Typerwriter()
     {
         while (tmpro.maxVisibleCharacters < tmpro.textInfo.characterCount)
         {
-            tmpro.maxVisibleCharacters += hurryUp ? charactersPerCycle * 5 : charactersPerCycle;
-
-            yield return new WaitForSeconds(0.015f / speed);
+            tmpro.maxVisibleCharacters += hurryup ? charactersPerCycle * 5 : charactersPerCycle; // 빠른 출력 여부에 따라 표시 문자 수 조정
+            yield return new WaitForSeconds(0.015f / speed); // 속도에 따른 대기 시간
         }
     }
 
-    IEnumerator Build_Fade()
+    // 페이드 효과 출력 방식
+    private IEnumerator Build_Fade()
     {
-        //Create a min and max char limit to control how many characters are allowed to render. This allows us to skip pretext and also do a sweeping fade.
-        int minChar = preTextLength;
-        int maxChar = preTextLength + 1;
-        //Alpha threshold is how visible a character should be before increasing the max char limit
+        int minRange = preTextLength;
+        int maxRange = minRange + 1;
+
         byte alphaThreshold = 15;
 
         TMP_TextInfo textInfo = tmpro.textInfo;
 
-        // Get the vertex colors of the mesh used by this text element (character or sprite).
-        Color32[] newVertexColors = textInfo.meshInfo[textInfo.characterInfo[0].materialReferenceIndex].colors32;
+        Color32[] vertexColors = textInfo.meshInfo[textInfo.characterInfo[0].materialReferenceIndex].colors32;
         float[] alphas = new float[textInfo.characterCount];
 
         while (true)
         {
-            //Multiplying the speed by 1.6f makes the fade last as long as the typewriter.
-            float fadeSpeed = ((hurryUp ? charactersPerCycle * 5f : charactersPerCycle) * speed) * 4f;
+            float fadeSpeed = (hurryup ? charactersPerCycle * 5 : charactersPerCycle * speed) * 4f;
 
-            for (int i = minChar; i < maxChar; i++)
+            for (int i = minRange; i < maxRange; i++)
             {
-                //Invisible characters like spaces have a vertex index of 0 which means if we change the color on that - it will try to set the color of the first character in the text.
-                //Running this in a loop causes the first character to consistently flicker until the fade is complete.
-                if (!textInfo.characterInfo[i].isVisible)
+                TMP_CharacterInfo charInfo = textInfo.characterInfo[i];
+
+                if (!charInfo.isVisible)
                     continue;
 
                 int vertexIndex = textInfo.characterInfo[i].vertexIndex;
                 alphas[i] = Mathf.MoveTowards(alphas[i], 255, fadeSpeed);
 
                 for (int v = 0; v < 4; v++)
-                    newVertexColors[vertexIndex + v].a = (byte)alphas[i];
+                    vertexColors[charInfo.vertexIndex + v].a = (byte)alphas[i];
 
                 if (alphas[i] >= 255)
-                    minChar++;
+                    minRange++;
             }
 
-            // New function which pushes (all) updated vertex data to the appropriate meshes when using either the Mesh Renderer or CanvasRenderer.
             tmpro.UpdateVertexData(TMP_VertexDataUpdateFlags.Colors32);
 
-            //If the last character is invisible then try to increase the max character limit on the sweeping fade.
-            //Do this if the current character has passed the alpha threshold.
-            bool lastCharacterIsInvisible = !textInfo.characterInfo[maxChar - 1].isVisible;
-            if (alphas[maxChar - 1] >= alphaThreshold || lastCharacterIsInvisible)
+            bool lastCharacterIsInvisible = !textInfo.characterInfo[maxRange - 1].isVisible;
+            if (alphas[maxRange - 1] > alphaThreshold || lastCharacterIsInvisible)
             {
-                if (maxChar < textInfo.characterCount)
-                    maxChar++;
-                else if (alphas[maxChar - 1] >= 255 || lastCharacterIsInvisible)
+                if (maxRange < textInfo.characterCount)
+                    maxRange++;
+                else if (alphas[maxRange - 1] >= 255 || lastCharacterIsInvisible)
                     break;
             }
 
             yield return new WaitForEndOfFrame();
         }
-    }
-
-    private IEnumerator Building()
-    {
-        Prepare();
-
-        switch (buildMethod)
-        {
-            case BuildMethod.typeWriter:
-                yield return Build_Typewriter();
-                break;
-            case BuildMethod.fade:
-                yield return Build_Fade();
-                break;
-        }
-
-        OnComplete();
-    }
-
-    /// <summary>
-    /// Immediately set the text of this architect to this text, bypassing any build requirement without changing the build method
-    /// </summary>
-    public void SetText(string text)
-    {
-        //Stop any active build processes.
-        Stop();
-
-        tmpro.text = text;
-        TMP_TextInfo info = tmpro.textInfo;
-
-        tmpro.ForceMeshUpdate();
-
-        //Set the visible characters and the color to account for whatever buld method may be used or may have been used.
-        tmpro.maxVisibleCharacters = info.characterCount;
-        textColor = new Color(textColor.r, textColor.g, textColor.b, 1);
     }
 }

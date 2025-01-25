@@ -3,23 +3,27 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
+/// <summary>
+///  The box that holds the name text on screen. Part of the dialogue container
+/// </summary>
+
 namespace DIALOGUE
 {
+
     [System.Serializable]
-    /// <summary>
-    /// The box that holds the name text on screen. Part of the dialogue container.
-    /// </summary>
+
     public class NameContainer
     {
         [SerializeField] private GameObject root;
         [SerializeField] private TextMeshProUGUI nameText;
 
-        public void Show(string nameToShow = "")
+        public void Show(string nameToshow = "")
         {
             root.SetActive(true);
 
-            if (nameToShow != string.Empty)
-                nameText.text = nameToShow;
+            if (nameToshow != string.Empty)
+                nameText.text = nameToshow;
+
         }
 
         public void Hide()

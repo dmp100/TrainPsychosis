@@ -235,36 +235,3 @@ flagSystem.SetVariable("affection", 50);  // 호감도 설정
 3. 게임 상태는 플래그로 관리
 4. 시스템 간 자유로운 전환 가능
 */
-
-------
-
-Elen "This is line 1"
- "This is line 2 from Elen"
- "This is line 3 from Elen"
-
-narrator "Narrator is speaking now."
-"Narrator is continuing to speak"
-
-John "John 1"
-"John 2"
-
-Elen "Elen 1"
-Elen "Elen 2"
-
-----
-
-
-speaker "dialogue here"
-speaker "dailogue Line 1{}Line 2{}Line 3"
-
-{c} = clear
-{a} = append
-{wc n} = wait clear
-{wa n} = wait append
-
-
-
------
-speaker "대사 출력" Command(agrs), Command(args)
-
-playSong(SongName -v 1 -p -1)

@@ -4,11 +4,22 @@ using UnityEngine;
 
 public class TestFiles : MonoBehaviour
 {
-    [SerializeField] private TextAsset file;
+    [SerializeField] private TextAsset fileName;
+
 
     // Start is called before the first frame update
     void Start()
     {
-        
+        StartCoroutine(Run());
+    }
+
+    IEnumerator Run() 
+    {
+        List<string> lines = FileManagers.ReadTextAsset(fileName,false);
+
+        foreach (string line in lines)
+            Debug.Log(line);
+
+        yield return null;
     }
 }
