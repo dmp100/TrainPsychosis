@@ -9,10 +9,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bb1317ce5f7248649a98e04d0131ab59, type: 3}
+  m_Script: {fileID: 11500000, guid: ac371f4a20473d2468abbbd2b107e007, type: 3}
   m_Name: Dialogue System Configuration
   m_EditorClassIdentifier: 
-  characterConfigurationAsset: {fileID: 11400000, guid: 4bf8fff621e2a2a4f83eb897bcb094ab,
+  characterConfigurationAsset: {fileID: 11400000, guid: f9e12f5e366489249bfdaacc05f4b894,
     type: 2}
   defaultTextColor: {r: 1, g: 1, b: 1, a: 1}
-  defaultFont: {fileID: 11400000, guid: 71e5c35a9f778e840a3c34416bb65945, type: 2}
+  defaultFont: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  dialogueFontScale: 1
+  defaultNameFontSize: 22
+  defaultDialogueFontSize: 18

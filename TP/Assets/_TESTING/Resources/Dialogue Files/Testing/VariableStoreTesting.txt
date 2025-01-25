@@ -1,0 +1,10 @@
+
+
+
+
+
+$money
+
+if ($Valery_Affinity > $Susan_Affinity)
+	narrator "You have a higher affinity with Valery than with Susan."
+

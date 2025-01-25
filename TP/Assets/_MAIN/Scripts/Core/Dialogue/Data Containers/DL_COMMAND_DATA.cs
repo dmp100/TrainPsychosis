@@ -1,15 +1,14 @@
-using System.Collections;
+using System;
 using System.Collections.Generic;
 using System.Text;
-using UnityEngine;
+using System.Text.RegularExpressions;
 
 namespace DIALOGUE
 {
     public class DL_COMMAND_DATA
     {
         public List<Command> commands;
-        private const char COMMANDSPLITTER_ID = ',';
-        private const char ARGUMENTSCONTAINER_ID = '(';
+        private const string COMMAND_PATTERN = @"([\w\.|\d+|\[|\]])*\(([^)]*)\),?";
         private const string WAITCOMMAND_ID = "[wait]";
 
         public struct Command
@@ -26,14 +25,15 @@ namespace DIALOGUE
 
         private List<Command> RipCommands(string rawCommands)
         {
-            string[] data = rawCommands.Split(COMMANDSPLITTER_ID, System.StringSplitOptions.RemoveEmptyEntries);
+            MatchCollection data = Regex.Matches(rawCommands, COMMAND_PATTERN);
             List<Command> result = new List<Command>();
 
-            foreach (string cmd in data)
+            foreach (Match cmd in data)
             {
                 Command command = new Command();
-                int index = cmd.IndexOf(ARGUMENTSCONTAINER_ID);
-                command.name = cmd.Substring(0, index).Trim();
+                string[] parts = cmd.Value.Split('(');
+
+                command.name = parts[0].Trim();
 
                 if (command.name.ToLower().StartsWith(WAITCOMMAND_ID))
                 {
@@ -43,7 +43,9 @@ namespace DIALOGUE
                 else
                     command.waitForCompletion = false;
 
-                command.arguments = GetArgs(cmd.Substring(index + 1, cmd.Length - index - 2));
+                string arguments = parts[1].TrimEnd(')', ',');
+                command.arguments = GetArgs(arguments);
+
                 result.Add(command);
             }
 

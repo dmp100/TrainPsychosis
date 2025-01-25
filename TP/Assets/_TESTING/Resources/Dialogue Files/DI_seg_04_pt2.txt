@@ -1,9 +1,0 @@
-
-
-Elen as ??? "안녕"
-
-Elen as ??? at 1:0 "안녕"
-
-Elen at 0.5:0.5 as The Girl "안녕"
-
-Elen as ??? [0:Angel, 1:Happy] at 0 "안녕"
