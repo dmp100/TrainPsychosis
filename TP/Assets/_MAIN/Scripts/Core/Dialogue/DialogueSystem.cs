@@ -48,11 +48,12 @@ namespace DIALOGUE
         {
             if (_initialized)
                 return;
-            // 텍스트 출력 관리자와 대화 관리자 초기화
+
+            Debug.Log($"Initializing DialogueSystem with font: {dialogueContainer.dialogueText.font.name}");
             architect = new TextArchitect(dialogueContainer.dialogueText);
             conversationManager = new ConversationManager(architect);
+            _initialized = true;
         }
-
         // 사용자 입력 처리 메서드
         public void OnUserPrompt_Next()
         {

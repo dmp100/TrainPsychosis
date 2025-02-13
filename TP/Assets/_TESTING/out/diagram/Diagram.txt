@@ -1,0 +1,71 @@
+@startuml
+class DialogueSystem {
+    -DialogueContainer dialogueContainer
+    -ConversationManager conversationManager
+    -TextArchitect architect
+    +{static} DialogueSystem instance
+    +bool isRunningConversation
+    +void Say(string speaker, string dialogue)
+    +void Say(List<string> conversation)
+    +void ShowSpeakerName(string)
+    +void HideSpeakerName()
+    +void OnUserPrompt_Next()
+}
+
+class DialogueContainer {
+    +GameObject root
+    +NameContainer nameContainer
+    +TextMeshProUGUI dialogueText
+}
+
+class NameContainer {
+    -GameObject root
+    -TextMeshProUGUI nameText
+    +void Show(string)
+    +void Hide()
+}
+
+class ConversationManager {
+    -TextArchitect architect
+    -Coroutine process
+    -bool userPrompt
+    +bool isRunning
+    +void StartConversation(List<string>)
+    +void StopConversation()
+    -IEnumerator RunningConversation()
+}
+
+class TextArchitect {
+    -TextMeshProUGUI tmpro_ui
+    -TextMeshPro tmpro_world
+    -string targetText
+    -float speed
+    +BuildMethod buildMethod
+    +bool isBuilding
+    +void Build(string)
+    +void Append(string)
+    +void ForceComplete()
+}
+
+class DIALOGUE_LINE {
+    +string speaker
+    +string dialogue
+    +string commands
+    +bool hasSpeaker
+    +bool hasDialogue
+    +bool hasCommands
+}
+
+class PlayerInputManager {
+    +void PromptAdvance()
+    +void Update()
+}
+
+DialogueSystem *-- DialogueContainer : contains
+DialogueContainer *-- NameContainer : contains
+DialogueSystem *-- ConversationManager : manages
+DialogueSystem *-- TextArchitect : uses
+ConversationManager *-- TextArchitect : uses
+PlayerInputManager --> DialogueSystem : notifies
+ConversationManager --> DIALOGUE_LINE : processes
+@enduml
